@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thanh toán - Pet Shop</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" th:href="@{/css/web/header.css}">
+    <link rel="stylesheet" th:href="@{/css/web/footer.css}">
+    <style>
+        .payment-section {
+            padding: 50px 0;
+            background: #f8f9fa;
+            min-height: 70vh;
+        }
+        
+        .payment-container {
+            max-width: 800px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+        
+        .payment-info {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
+        .payment-qr {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        
+        .qr-image {
+            width: 250px;
+            height: 250px;
+            margin: 0 auto 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 10px;
+        }
+        
+        .payment-method-badge {
+            display: inline-block;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+        
+        .momo-badge {
+            background: #c2185b;
+            color: white;
+        }
+        
+        .vnpay-badge {
+            background: #005baa;
+            color: white;
+        }
+        
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 30px;
+        }
+        
+        .qr-error {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #dc3545;
+            text-align: center;
+        }
+        
+        .qr-error i {
+            font-size: 40px;
+            margin-bottom: 10px;
+        }
+        
+        .btn-primary {
+            background: #e94560;
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            flex: 1;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            background: #d1344f;
+            transform: translateY(-2px);
+        }
+        
+        .btn-secondary {
+            background: #0f3460;
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            flex: 1;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-secondary:hover {
+            background: #0a2640;
+            transform: translateY(-2px);
+        }
+        
+        .instructions {
+            background: #fff5f5;
+            border-left: 4px solid #e94560;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+
+        /* Toast styles */
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            min-width: 300px;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            z-index: 10000;
+            border-left: 4px solid;
+            animation: slideInRight 0.3s ease-out;
+        }
+        
+        .toast-success { border-left-color: #28a745; }
+        .toast-error { border-left-color: #e94560; }
+        .toast-warning { border-left-color: #ffc107; }
+        .toast-info { border-left-color: #17a2b8; }
+        
+        .toast-icon { font-size: 24px; }
+        .toast-success .toast-icon { color: #28a745; }
+        .toast-error .toast-icon { color: #e94560; }
+        .toast-warning .toast-icon { color: #ffc107; }
+        .toast-info .toast-icon { color: #17a2b8; }
+        
+        .toast-content { flex: 1; }
+        .toast-title { 
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: #0f3460;
+        }
+        .toast-message { 
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .toast-close {
+            background: none;
+            border: none;
+            font-size: 16px;
+            color: #999;
+            cursor: pointer;
+            padding: 5px;
+        }
+        
+        .toast-close:hover { color: #666; }
+        
+        @keyframes slideInRight {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        @media (max-width: 768px) {
+            .payment-container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div th:replace="~{web/layout/header :: header}"></div>
+    
+    <section class="payment-section">
+        <div class="container">
+            <div class="payment-container">
+                <div class="payment-info">
+                    <h2>Thông tin thanh toán</h2>
+                    
+                    <div th:if="${phuongThuc == 'MOMO'}" class="payment-method-badge momo-badge">
+                        <i class="fa-solid fa-money-bill-wave"></i> MoMo
+                    </div>
+                    
+                    <div th:if="${phuongThuc == 'VNPAY'}" class="payment-method-badge vnpay-badge">
+                        <i class="fa-solid fa-credit-card"></i> VNPay
+                    </div>
+                    
+                    <div class="info-row">
+                        <span>Mã đơn hàng:</span>
+                        <strong th:text="${datHang.maDatHang}"></strong>
+                    </div>
+                    
+                    <div class="info-row">
+                        <span>Số tiền:</span>
+                        <strong th:text="'₫' + ${#numbers.formatDecimal(amount, 0, 'COMMA', 0, 'POINT')}"></strong>
+                    </div>
+                    
+                    <div class="info-row">
+                        <span>Nội dung:</span>
+                        <span th:text="${description}"></span>
+                    </div>
+                    
+                    <div class="instructions">
+                        <h4><i class="fa-solid fa-circle-info"></i> Hướng dẫn:</h4>
+                        <p th:if="${phuongThuc == 'MOMO'}">
+                            1. Mở ứng dụng MoMo<br>
+                            2. Chọn "Quét mã"<br>
+                            3. Quét mã QR bên cạnh<br>
+                            4. Xác nhận thanh toán
+                        </p>
+                        <p th:if="${phuongThuc == 'VNPAY'}">
+                            1. Mở ứng dụng ngân hàng<br>
+                            2. Chọn "Quét mã VNPay"<br>
+                            3. Quét mã QR bên cạnh<br>
+                            4. Xác nhận thanh toán
+                        </p>
+                    </div>
+                    
+                    <div class="action-buttons">
+                        <button type="button" onclick="handlePayment()" class="btn-primary">
+                            <i class="fa-solid fa-external-link-alt"></i>
+                            Thanh toán trên website
+                        </button>
+                        <a th:href="@{/orders}" class="btn-secondary">
+                            <i class="fa-solid fa-arrow-left"></i>
+                            Quay lại
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="payment-qr">
+                    <h3>Quét mã QR để thanh toán</h3>
+                    
+                    <div class="qr-image">
+                        <!-- Thêm điều kiện kiểm tra null -->
+                        <img th:if="${qrCode != null}" 
+                             th:src="'data:image/png;base64,' + ${qrCode}" 
+                             alt="QR Code" 
+                             style="width: 100%; height: 100%;">
+                        
+                        <!-- Hiển thị thông báo nếu không có QR code -->
+                        <div th:if="${qrCode == null}" class="qr-error">
+                            <i class="fa-solid fa-exclamation-triangle"></i>
+                            <p>Không thể tạo mã QR. Vui lòng thử lại.</p>
+                        </div>
+                    </div>
+                    
+                    <p>Quét mã QR bằng ứng dụng <span th:text="${phuongThuc}"></span> trên điện thoại</p>
+                    
+                    <button th:if="${qrCode != null}" onclick="downloadQRCode()" class="btn-secondary" style="margin-top: 15px;">
+                        <i class="fa-solid fa-download"></i>
+                        Tải mã QR
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <div th:replace="~{web/layout/footer :: footer}"></div>
+
+    <script>
+        // Hàm hiển thị toast
+        function showToast(type, title, message) {
+            // Xóa toast cũ nếu có
+            const existingToast = document.querySelector('.toast');
+            if (existingToast) {
+                existingToast.remove();
+            }
+            
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            
+            let iconClass = '';
+            if (type === 'success') iconClass = 'fa-circle-check';
+            else if (type === 'error') iconClass = 'fa-circle-xmark';
+            else if (type === 'warning') iconClass = 'fa-circle-exclamation';
+            else if (type === 'info') iconClass = 'fa-circle-info';
+            
+            toast.innerHTML = `
+                <div class="toast-icon">
+                    <i class="fa-solid ${iconClass}"></i>
+                </div>
+                <div class="toast-content">
+                    <div class="toast-title">${title}</div>
+                    <div class="toast-message">${message}</div>
+                </div>
+                <button class="toast-close">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            `;
+            
+            document.body.appendChild(toast);
+            
+            // Xử lý sự kiện đóng toast
+            toast.querySelector('.toast-close').addEventListener('click', function() {
+                toast.remove();
+            });
+            
+            // Tự động ẩn sau 5 giây
+            setTimeout(() => {
+                if (toast.parentNode) {
+                    toast.remove();
+                }
+            }, 5000);
+        }
+
+        // Hàm xử lý thanh toán
+        function handlePayment() {
+            console.log('Payment button clicked - showing development message');
+            showToast('info', 'Thông báo', 'Chức năng thanh toán trực tiếp đang được phát triển.');
+            
+            // Thêm hiệu ứng cho nút để người dùng biết đã nhấn
+            const paymentBtn = document.querySelector('.btn-primary');
+            paymentBtn.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                paymentBtn.style.transform = '';
+            }, 150);
+        }
+
+        function downloadQRCode() {
+            const qrImage = document.querySelector('.qr-image img');
+            if (qrImage) {
+                const link = document.createElement('a');
+                link.download = 'payment-qrcode.png';
+                link.href = qrImage.src;
+                link.click();
+            }
+        }
+        
+        // Kiểm tra trạng thái thanh toán mỗi 10 giây
+        setInterval(() => {
+            checkPaymentStatus();
+        }, 10000);
+        
+        function checkPaymentStatus() {
+            // Có thể implement polling để check trạng thái thanh toán
+            console.log('Checking payment status...');
+        }
+
+        // Thêm sự kiện để ngăn chặn hành vi mặc định của các link thanh toán (nếu có)
+        document.addEventListener('DOMContentLoaded', function() {
+            // Ngăn chặn tất cả các link thanh toán mở trang mới
+            const paymentLinks = document.querySelectorAll('a[href*="payment"], a[href*="momo"], a[href*="vnpay"]');
+            paymentLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    showToast('info', 'Thông báo', 'Chức năng thanh toán trực tiếp đang được phát triển.');
+                });
+            });
+        });
+    </script>
+</body>
+</html>
